@@ -54,6 +54,12 @@ class KLogger
     const STATUS_LOG_CLOSED  = 3;
 
     /**
+     * Log frequency constants
+     */
+    const DAILY   = 'daily';
+    const MONTHLY = 'monthly';
+
+    /**
      * We need a default argument value in order to add the ability to easily
      * print out objects etc. But we can't use NULL, 0, FALSE, etc, because those
      * are often the values the developers will test for. So we'll make one up.
@@ -131,7 +137,7 @@ class KLogger
         if ($severity === false) {
             $severity = self::$_defaultSeverity;
         }
-        
+
         if ($logDirectory === false) {
             if (count(self::$instances) > 0) {
                 return current(self::$instances);
@@ -154,9 +160,10 @@ class KLogger
      *
      * @param string  $logDirectory File path to the logging directory
      * @param integer $severity     One of the pre-defined severity constants
+     * @param string  $frequency    One of the pre-defined frequency constants
      * @return void
      */
-    public function __construct($logDirectory, $severity)
+    public function __construct($logDirectory, $severity, $frequency)
     {
         $logDirectory = rtrim($logDirectory, '\\/');
 
@@ -164,10 +171,15 @@ class KLogger
             return;
         }
 
+        $timestamp = date('Y-m-d'); // default to daily
+        if ($frequency === self::MONTHLY) {
+            $timestamp = date('Y-m');
+        }
+
         $this->_logFilePath = $logDirectory
             . DIRECTORY_SEPARATOR
             . 'log_'
-            . date('Y-m-d')
+            . $timestamp
             . '.txt';
 
         $this->_severityThreshold = $severity;
@@ -239,7 +251,7 @@ class KLogger
 
     /**
      * Sets the date format used by all instances of KLogger
-     * 
+     *
      * @param string $dateFormat Valid format string for date()
      */
     public static function setDateFormat($dateFormat)
@@ -273,7 +285,7 @@ class KLogger
 
     /**
      * Writes a $line to the log with a severity level of WARN. Generally
-     * corresponds to E_WARNING, E_USER_WARNING, E_CORE_WARNING, or 
+     * corresponds to E_WARNING, E_USER_WARNING, E_CORE_WARNING, or
      * E_COMPILE_WARNING
      *
      * @param string $line Information to log
@@ -352,14 +364,14 @@ class KLogger
     {
         if ($this->_severityThreshold >= $severity) {
             $status = $this->_getTimeLine($severity);
-            
+
             $line = "$status $line";
-            
+
             if($args !== self::NO_ARGUMENTS) {
                 /* Print the passed object value */
                 $line = $line . '; ' . var_export($args, true);
             }
-            
+
             $this->writeFreeFormLine($line . PHP_EOL);
         }
     }
